@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 type InstaFeed struct {
@@ -47,10 +48,30 @@ func main() {
 	}
 }
 
+var instaItems []InstaItem
+var timeStamp time.Time
+
 func getInstaFeed(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET")
 
+	timeNow := time.Now()
+
+	// if instaItems has been populated and the time difference is less than 1 hour,
+	// return the cached value
+	if len(instaItems) > 0 && timeNow.Hour()-timeStamp.Hour() < 1 {
+		fmt.Println("returning cahced result")
+		err := json.NewEncoder(w).Encode(instaItems)
+		if err != nil {
+			fmt.Fprintf(w, "oops %s", err)
+			return
+		}
+		return
+	}
+
+	fmt.Println("fetching data")
+	instaItems = nil
+	// else fetch the data
 	feed, err := fetchInstaFeed(w)
 	if err != nil {
 		fmt.Fprintf(w, "error: %s", err)
@@ -59,7 +80,6 @@ func getInstaFeed(w http.ResponseWriter, r *http.Request) {
 
 	data := feed.Data
 
-	var instaItems []InstaItem
 	for i := 0; i < 9 || i == len(data); i++ {
 		instaItem, err := fetchInstaItem(data[i].ID, w)
 		if err != nil {
@@ -69,6 +89,8 @@ func getInstaFeed(w http.ResponseWriter, r *http.Request) {
 
 		instaItems = append(instaItems, *instaItem)
 	}
+
+	timeStamp = timeNow
 
 	err = json.NewEncoder(w).Encode(instaItems)
 	if err != nil {
