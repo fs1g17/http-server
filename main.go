@@ -45,48 +45,29 @@ func main() {
 		fmt.Printf("error starting server: %s\n", err)
 		os.Exit(1)
 	}
-
 }
 
 func getInstaFeed(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET")
 
-	resp, err := http.Get(instaUrl)
+	feed, err := fetchInstaFeed(w)
 	if err != nil {
-		fmt.Fprintf(w, "error making http request: %s", err)
-		return
-	}
-
-	var feed InstaFeed
-	if err := json.NewDecoder(resp.Body).Decode(&feed); err != nil {
-		fmt.Fprintf(w, "error decoding insta feed body: %s", err)
+		fmt.Fprintf(w, "error: %s", err)
 		return
 	}
 
 	data := feed.Data
 
 	var instaItems []InstaItem
-
 	for i := 0; i < 9 || i == len(data); i++ {
-		item := data[i]
-		id := item.ID
-
-		mediaUrl := fmt.Sprintf("https://graph.instagram.com/%s?access_token=%s&fields=media_url,permalink,thumbnail_url,media_type", id, accessToken)
-
-		resp, err := http.Get(mediaUrl)
+		instaItem, err := fetchInstaItem(data[i].ID, w)
 		if err != nil {
-			fmt.Fprintf(w, "error getting media item  with id: %s, error: %s", id, err)
+			fmt.Fprintf(w, "error: %s", err)
 			return
 		}
 
-		var instaItem InstaItem
-		if err := json.NewDecoder(resp.Body).Decode(&instaItem); err != nil {
-			fmt.Fprintf(w, "error deconding media item with id: %s, error: %s", id, err)
-			return
-		}
-
-		instaItems = append(instaItems, instaItem)
+		instaItems = append(instaItems, *instaItem)
 	}
 
 	err = json.NewEncoder(w).Encode(instaItems)
@@ -95,4 +76,38 @@ func getInstaFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+func fetchInstaFeed(w http.ResponseWriter) (*InstaFeed, error) {
+	resp, err := http.Get(instaUrl)
+	if err != nil {
+		fmt.Fprintf(w, "error making http request: %s", err)
+		return nil, fmt.Errorf("error making http request")
+	}
+
+	var feed InstaFeed
+	if err := json.NewDecoder(resp.Body).Decode(&feed); err != nil {
+		fmt.Fprintf(w, "error decoding insta feed body: %s", err)
+		return nil, fmt.Errorf("error decoding insta feed")
+	}
+
+	return &feed, nil
+}
+
+func fetchInstaItem(id string, w http.ResponseWriter) (*InstaItem, error) {
+	mediaUrl := fmt.Sprintf("https://graph.instagram.com/%s?access_token=%s&fields=media_url,permalink,thumbnail_url,media_type", id, accessToken)
+
+	resp, err := http.Get(mediaUrl)
+	if err != nil {
+		fmt.Fprintf(w, "error getting media item  with id: %s, error: %s", id, err)
+		return nil, fmt.Errorf("error getting media item")
+	}
+
+	var instaItem InstaItem
+	if err := json.NewDecoder(resp.Body).Decode(&instaItem); err != nil {
+		fmt.Fprintf(w, "error deconding media item with id: %s, error: %s", id, err)
+		return nil, fmt.Errorf("error decoding media item")
+	}
+
+	return &instaItem, nil
 }
