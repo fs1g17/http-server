@@ -1,8 +1,7 @@
 FROM golang:1.19 as builder
 WORKDIR /app
-COPY go.* ./
+COPY . .
 RUN go mod download
-COPY . ./
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -v -o server
 
 FROM alpine:3
