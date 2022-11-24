@@ -6,6 +6,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -v -o server
 
 FROM alpine:3
 RUN apk add --no-cache ca-certificates
-COPY --from=builder /app/server /server
+WORKDIR /app
+COPY .env .
+COPY --from=builder /app/server .
 EXPOSE 9090
-CMD ["/server"]
+CMD [ "/app/server" ]
