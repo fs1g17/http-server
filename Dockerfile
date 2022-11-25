@@ -9,5 +9,5 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY .env .
 COPY --from=builder /app/server .
-EXPOSE 9090
+EXPOSE 8080
 CMD [ "/app/server" ]

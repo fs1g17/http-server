@@ -22,7 +22,7 @@ func main() {
 
 	accessToken := os.Getenv("ACCESS_TOKEN")
 	userId := os.Getenv("USER_ID")
-	addr := ":9090"
+	addr := ":8080"
 	cacheExpirationTime := time.Hour
 
 	instaURL := fmt.Sprintf("https://graph.instagram.com/%s/media?access_token=%s", userId, accessToken)

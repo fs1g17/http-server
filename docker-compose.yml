@@ -5,4 +5,4 @@ services:
     image: gw
     container_name: gw
     ports:
-      - 9090:9090
+      - 8080:8080
